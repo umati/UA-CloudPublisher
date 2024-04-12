@@ -52,5 +52,5 @@ jobs:
           platforms: linux/arm64
           file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: "ghcr.io/barnstee/ua-cloudpublisher-arm64:latest"
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
