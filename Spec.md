@@ -81,7 +81,9 @@ For the umati Dashboard, this topic structure is restricted as follows:
 - `<WriterGroup> = Expanded NodeId of the object representing the machine`
 - `<DataSetWriter> = BrowsePath`
 
-The BrowsePath in the DataSetWriter is built with a "." between each BrowseName. The BrowseNames use only the namespace index to avoid collisions. For identification of the object, the name of the DataSet with expanded NodeId must be used.
+The BrowsePath in the DataSetWriter is built with a "." between each BrowseName. The BrowseNames use only the namespace index to avoid collisions.
+Special character as `'/''.''<'| '>' | ':' | '#' | '!' | '&' ` in the `name` field of the BrowseName  need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
+For identification of the object, the name of the DataSet with expanded NodeId must be used.
 If two node has the same BrowsePath a iterator ("_Number") can be send to avoid collisions (e.g, `3:Partent.3:Tool_1`, `3:Partent.3:Tool_2` `3:Partent.3:Tool_3` )
 
 ### Examples
