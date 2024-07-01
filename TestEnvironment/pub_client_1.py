@@ -1,28 +1,30 @@
-#simulator device 1 for mqtt message publishing
-import paho.mqtt.client as paho
-import time
+# simulator device 1 for mqtt message publishing
 import random
+import time
 
-#brokersettings
-broker="localhost" # mqtt broker url + port exposed to local
-port=1883
+import paho.mqtt.client as paho
 
-def on_publish(client,userdata,result):
+# brokersettings
+BROKER = "localhost"  # mqtt broker url + port exposed to local
+PORT = 1883
+
+
+def on_publish(client, userdata, result):
     print("Device 1 : Data published.")
     pass
 
-client= paho.Client(client_id="admin")
-client.on_publish = on_publish
-client.connect(host=broker,port=port)
-for i in range(20):
-    d=random.randint(1,5)
-    
- #telemetry to send 
-    message="Device 1 : Data " + str(i)
-    time.sleep(d)
-    
 
-    #publish message
-    ret= client.publish(topic="data",payload=message)
+client = paho.Client(client_id="admin")
+client.on_publish = on_publish
+client.connect(host=BROKER, port=PORT)
+for i in range(20):
+    d = random.randint(1, 5)
+
+    # telemetry to send
+    MESSAGE = "Device 1 : Data " + str(i)
+    time.sleep(d)
+
+    # publish message
+    ret = client.publish(topic="data", payload=MESSAGE)
 
 print("Stopped...")
