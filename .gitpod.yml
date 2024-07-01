@@ -1,5 +1,5 @@
 ---
-image: gitpod/workspace-dotnet-8:latest
+image: gitpod/workspace-dotnet-8:2024-06-26-08-49-45
 
 tasks:
   - name: Init workspace
