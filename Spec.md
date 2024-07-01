@@ -66,6 +66,10 @@ A field can also contain properties but no other variables, even though the addr
 
 The name of a DataSet is created by the BrowsePath of the object. The NamespaceUri is used instead of the NamespaceIndex to make the path server-independent. Other BrowsePaths may also be possible. Alternative BrowsePaths can be mapped to the description (see description field of the MetaData). References can also be mapped into the description.
 
+## Mapping of Events
+
+Events are also mapped to a DataSet. Cause Event have no BrowsePath, the BrowsePath of the SourceName and the EventName is used. The mapping itself is analogous to the mapping of objects.
+
 ## Topic Structure
 
 The generic topic structure for OPC UA is:
@@ -81,10 +85,12 @@ For the umati Dashboard, this topic structure is restricted as follows:
 - `<WriterGroup> = Expanded NodeId of the object representing the machine`
 - `<DataSetWriter> = BrowsePath`
 
-The BrowsePath in the DataSetWriter is built with a "." between each BrowseName. The BrowseNames use only the namespace index to avoid collisions.
-Special character as `'/''.''<'| '>' | ':' | '#' | '!' | '&' ` in the `name` field of the BrowseName  need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
 For identification of the object, the name of the DataSet with expanded NodeId must be used.
+
+The BrowsePath in the DataSetWriter is built with a "." between each BrowseName. The BrowseNames use only the namespace index to avoid collisions.
+All character except `[A-Za-z0-9]` in the `name` field of the BrowseName  need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
 If two node has the same BrowsePath a iterator ("_Number") can be send to avoid collisions (e.g, `3:Partent.3:Tool_1`, `3:Partent.3:Tool_2` `3:Partent.3:Tool_3` )
+Cause Event have no BrowsePath, the BrowsePath of the SourceName and the EventName is used.
 
 ### Examples
 
@@ -95,6 +101,13 @@ umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMach
 umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production.3:ActiveProgram
 umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production.3:ActiveProgram.1:State
 ```
+
+DataSet Event Topic
+
+```text
+umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/2:Identification.0:BaseEventType
+```
+
 
 MetaDataSet Topic
 
