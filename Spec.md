@@ -1,7 +1,7 @@
-# OPC UA Pub/Sub Interface Description
+# OPC UA PubSub Interface Description
 
 This document defines the Interface of the umati Dashboard based on OPC UA PubSub.
-It describes how a OPC UA server address space must be mapped to OPC UA PubSub, so that the infromation can map to the templates and displayed.
+It describes how a OPC UA server address space must be mapped to OPC UA PubSub, so that the information can map to the templates and displayed.
 
 ## Requirements for the Mapping of the address space to PubSub
 
@@ -46,7 +46,7 @@ The image shows a part of an address space. Each object is mapped to a DataSet:
 - ActiveProgram
 - State
 
-The properties Name, NumberInList, Id, and Number are fields of the DataSets. The value of CurrentState is mapped as a field of ActiveProgram and has a DataSet with its properties:
+The properties Name, NumberInList, Id, and Number are fields of the DataSets. The value of CurrentState is mapped as a field of State and has a DataSet with its properties:
 
 - Production
 - ActiveProgram
@@ -76,12 +76,13 @@ For the umati Dashboard, this topic structure is restricted as follows:
 
 - `<Prefix> = umati.v3`
 - `<Encoding> = json`
-- `<MqttMessageType> = as defined in OPC UA PUB/SUB`
+- `<MqttMessageType> = as defined in OPC UA PubSub`
 - `<PublisherId> = Name of the Client`
 - `<WriterGroup> = Expanded NodeId of the object representing the machine`
 - `<DataSetWriter> = BrowsePath`
 
 The BrowsePath in the DataSetWriter is built with a "." between each BrowseName. The BrowseNames use only the namespace index to avoid collisions. For identification of the object, the name of the DataSet with expanded NodeId must be used.
+If two node has the same BrowsePath a iterator ("_Number") can be send to avoid collisions (e.g, `3:Partent.3:Tool_1`, `3:Partent.3:Tool_2` `3:Partent.3:Tool_3` )
 
 ### Examples
 
@@ -127,6 +128,8 @@ The fields of DataSetMeta should be mapped as follows:
   - Other properties as defined in Part 14
 - DataSetClassId = as defined in Part 14
 - ConfigurationVersion = as defined in Part 14
+
+If two node has the same BrowsePath a iterator ("_Number") can be send to avoid collisions (e.g, `3:Partent.3:Tool_1`, `3:Partent.3:Tool_2` `3:Partent.3:Tool_3` )
 
 ### Description JSON
 
@@ -212,8 +215,7 @@ The DataSet follows the MetaData and other definitions of the specification. A D
 
 As definied in OPC UA Part 14 the status should be sended at the following topic:
 `umati.v3/<Encoding>/status/<PublisherId>` with  `<PublisherId>` is the name of the Client
-The value of the Field "IsCyclic" should be `true` and the Status should be published at least every 5 min a slower inverval is possible.
-
+The value of the Field "IsCyclic" should be `true` and the Status should be published at least every 90 Sec a higher frequency is possible.
 ## Application
 
 The Application can be send optional.
