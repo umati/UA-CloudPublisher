@@ -32,9 +32,9 @@ jobs:
           fetch-depth: 0
 
       - name: Super-linter
-        uses: super-linter/super-linter@v6.3.1
+        uses: super-linter/super-linter@v6.6.0
         env:
           # To report GitHub Actions status checks
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: TRUE
+          VALIDATE_ALL_CODEBASE: true
           VALIDATE_CHECKOV: false
