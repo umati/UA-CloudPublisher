@@ -15,7 +15,7 @@ WORKDIR "/src/."
 RUN dotnet build "UA-CloudPublisher.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "UA-CloudPublisher.csproj" -c Release -o /app/publish
+RUN dotnet publish "UA-CloudPublisher.csproj" --framework net8.0 -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
