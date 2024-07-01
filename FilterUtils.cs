@@ -24,7 +24,7 @@ namespace Opc.Ua.Cloud.Publisher
 
             // add the fields for the selected EventTypes.
             CollectFields(session, ObjectTypeIds.BaseEventType, selectClauses);
-            
+
             return selectClauses;
         }
 
@@ -34,7 +34,7 @@ namespace Opc.Ua.Cloud.Publisher
 
             // the code below constructs a filter that looks like this:
             // (Severity >= X OR LastSeverity >= X) AND (SuppressedOrShelved == False) AND (OfType(A) OR OfType(B))
-                        
+
             // add the severity.
             ContentFilterElement element1 = null;
             if (severity > EventSeverity.Min)
@@ -97,7 +97,7 @@ namespace Opc.Ua.Cloud.Publisher
             }
 
             // process the types starting from the top of the tree.
-            Dictionary<NodeId,QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
+            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
             QualifiedNameCollection parentPath = new QualifiedNameCollection();
 
             for (int i = supertypes.Count - 1; i >= 0; i--)
@@ -154,7 +154,7 @@ namespace Opc.Ua.Cloud.Publisher
 
                     field.TypeDefinitionId = ObjectTypeIds.BaseEventType;
                     field.BrowsePath = browsePath;
-                    field.AttributeId = (child.NodeClass == NodeClass.Variable)?Attributes.Value:Attributes.NodeId;
+                    field.AttributeId = (child.NodeClass == NodeClass.Variable) ? Attributes.Value : Attributes.NodeId;
 
                     eventFields.Add(field);
                 }
