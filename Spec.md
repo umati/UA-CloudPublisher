@@ -29,7 +29,30 @@ It describes how a OPC UA server address space must be mapped to OPC UA PubSub, 
 
 The concept of OPC UA Part 14 should be followed as closely as possible.
 
+## Status of the Publisher
+
+As definied in OPC UA Part 14 the status should be sended at the following topic:
+`opcua/json/status/<PublisherId>` with  `<PublisherId>` is the name of the Client
+The value of the Field "IsCyclic" should be `true` and the Status should be published at least every 90 Sec a higher frequency is possible.
+
+## Application Description
+
+The Application can be send optional.
+
+## Connection
+
+As definied in OPC UA Part 14 the connection should be sended at the following topic:
+`opcua/json/connection/<PublisherId>` with  `<PublisherId>` is the name of the Client.
+The following parameter must be set:
+
+- `WriterGroups.DataSetWriters.QueueName`
+- `WriterGroups.DataSetWriters.MetaDataQueueName`
+
 ## Mapping
+
+### Gerneral
+
+- For identification of nodes, the name of the DataSet with expanded NodeId must be used.
 
 ### Mapping of Objects and Variables
 
@@ -70,64 +93,53 @@ The name of a DataSet is created by the BrowsePath of the object. The NamespaceU
 
 Events are also mapped to a DataSet. Cause Event have no BrowsePath, the BrowsePath of the SourceName and the EventName is used. The mapping itself is analogous to the mapping of objects.
 
-## Topic Structure
+## Topic Structure of DataSet and MetaDataSet
 
 The generic topic structure for OPC UA is:
 
 `<Prefix>/<Encoding>/<MqttMessageType>/<PublisherId>/[<WriterGroup>[/<DataSetWriter>]]`
 
-For the umati Dashboard, this topic structure is restricted as follows:
+The mapping is based on the structure but deviates from it if necessary. The connection topic (see above) can still be used to read out the exact topic.
 
-- `<Prefix> = umati.v3`
-- `<Encoding> = json`
-- `<MqttMessageType> = as defined in OPC UA PubSub`
-- `<PublisherId> = Name of the Client`
-- `<WriterGroup> = Expanded NodeId of the object representing the machine`
-- `<DataSetWriter> = BrowsePath`
+| Key               | Description                                                  |
+|-------------------|--------------------------------------------------------------|
+| `<Prefix>`        | umati/v3                                                     |
+| `<Encoding>`      | json                                                         |
+| `<MqttMessageType>` | as defined in OPC UA PubSub                                |
+| `<PublisherId>`   | Name of the Client. Can be used for UNS Structure            |
+| `[<WriterGroup>[/<DataSetWriter>]]` | PathToTheNode                              |
 
-For identification of the object, the name of the DataSet with expanded NodeId must be used.
+The PathToTheNode is the Path from the 0:Objects node to the Node that is connected to the DataSet.
+Dabei werden generelle nur Hierachical Refernces genutzt. Sollte ein Node an zwei Stellen auftreten, soll die Nachricht an beide Topics geschickt werden.
+Durch die Nutzung von Organizes Referencen kann es zu Loops im Pfad entstehen. In diesem Fall soll nur der kürzerste Pfad übertragen werden.
+Each Node is a topic. The Topic name is build from the `name` field of the BrowseName. All character except `[A-Za-z0-9]` need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
+If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
-The BrowsePath in the DataSetWriter is built with a "." between each BrowseName. The BrowseNames use only the namespace index to avoid collisions.
-All character except `[A-Za-z0-9]` in the `name` field of the BrowseName  need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
-If two node has the same BrowsePath a iterator ("_Number") can be send to avoid collisions (e.g, `3:Partent.3:Tool_1`, `3:Partent.3:Tool_2` `3:Partent.3:Tool_3` )
-Cause Event have no BrowsePath, the BrowsePath of the SourceName and the EventName is used.
+For Events the SourceNode and the Name are used for the PathToTheNode
 
 ### Examples
 
 DataSet Topic
 
 ```text
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/2:Identification
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production.3:ActiveProgram
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production.3:ActiveProgram.1:State
+umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Identification
+umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram
+umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State
 ```
 
 DataSet Event Topic
 
 ```text
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/2:Identification.0:BaseEventType
+umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State/TransitionEventType
 ```
-
 
 MetaDataSet Topic
 
 ```text
-umati.v3/json/metadata/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/2:Identification
-umati.v3/json/metadata/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production.3:ActiveProgram
-umati.v3/json/metadata/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production.3:ActiveProgram.1:State
+umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Identification
+umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram
+umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State
 ```
-
-### Alternative
-
-To be discussed: Instead of building a large topic name with "." from the BrowsePath, the path can also be split into different topic levels as shown here:
-
-```text
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/2:Identification
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production/3:ActiveProgram
-umati.v3/json/data/example_publisher_1/nsu=http:_2F_2Fexample.com_2FShowcaseMachineTool_2F;i=66382/3:Production/3:ActiveProgram/1:State
-```
-
-This solution might be better for debugging but does not fit with the OPC UA PubSub specification.
 
 ## DataSetMeta
 
@@ -144,7 +156,7 @@ The fields of DataSetMeta should be mapped as follows:
 - DataSetClassId = as defined in Part 14
 - ConfigurationVersion = as defined in Part 14
 
-If two node has the same BrowsePath a iterator ("_Number") can be send to avoid collisions (e.g, `3:Partent.3:Tool_1`, `3:Partent.3:Tool_2` `3:Partent.3:Tool_3` )
+If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
 ### Description JSON
 
@@ -219,22 +231,10 @@ The DataSet follows the MetaData and other definitions of the specification. A D
 {
   "Timestamp": "2021-09-27T18:45:19.555Z",
   "Status": 1073741824,
+  "Name": "5:Production.5:ActiveProgram.5:State",
   "Payload": {
     "Name": "Basic Program",
     "NumberInList": 0
   }
 }
 ```
-
-## Status
-
-As definied in OPC UA Part 14 the status should be sended at the following topic:
-`umati.v3/<Encoding>/status/<PublisherId>` with  `<PublisherId>` is the name of the Client
-The value of the Field "IsCyclic" should be `true` and the Status should be published at least every 90 Sec a higher frequency is possible.
-## Application
-
-The Application can be send optional.
-
-## Connection
-
-The Connection can be send optional.
