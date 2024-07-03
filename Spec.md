@@ -110,8 +110,8 @@ The mapping is based on the structure but deviates from it if necessary. The con
 | `[<WriterGroup>[/<DataSetWriter>]]` | PathToTheNode                              |
 
 The PathToTheNode is the Path from the 0:Objects node to the Node that is connected to the DataSet.
-Dabei werden generelle nur Hierachical Refernces genutzt. Sollte ein Node an zwei Stellen auftreten, soll die Nachricht an beide Topics geschickt werden.
-Durch die Nutzung von Organizes Referencen kann es zu Loops im Pfad entstehen. In diesem Fall soll nur der kürzerste Pfad übertragen werden.
+Generally, only hierarchical references are used. If a node occurs in two places, the message should be sent to both topics.
+The use of Organizes references can lead to loops in the path. In this case, only the shortest path should be transmitted.
 Each Node is a topic. The Topic name is build from the `name` field of the BrowseName. All character except `[A-Za-z0-9]` need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
 If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
