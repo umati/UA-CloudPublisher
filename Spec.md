@@ -355,3 +355,106 @@ The DataSet follows the MetaData and other definitions of the specification. A D
   }
 }
 ```
+### Variante C Extend the DataSetMeta
+
+This variant extend the DataSetMeta with the needed fields. This variant may not compliance with OPC UA Part 14 but contains all needed informations and the seperation between DataSet and DataSetMeta is correct.
+
+#### DataSetMeta
+
+The fields of DataSetMeta should be mapped as follows:
+
+- Namespaces = as defined in Part 14
+- StructureDataTypes = as defined in Part 14
+- Name = BrowsePath with NamespaceUri instead of namespace index
+- Description = as defined in Part 14
+- Fields = Contains the field description of the variables/properties
+  - Name = ExpandedBrowseName (NamespaceUri#Name)
+  - Properties = Not used
+  - Other properties as defined in Part 14
+- DataSetClassId = as defined in Part 14
+- ConfigurationVersion = as defined in Part 14
+
+If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
+
+Additional the following fiedls are defined:
+
+| Name                 | DataType       | Dimension | ModellingRule | Description                                                     |
+|----------------------|----------------|-----------|---------------|-----------------------------------------------------------------|
+| Type                 | QualifiedName     | Array    | optional      | Name of the type of the ObjectType or VariableType. Each empty in the array represents a supertype of the node. The first entry is the type itself.              |
+| TypeNodeID           | ExtendedNodeId | Scalar    |               | NodeId of the type of the ObjectType or VariableType            |
+| AdditionalBrowsePath | String         | Scalar    | optional      | If additional BrowsePaths exist, they can be included here      |
+| AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
+| Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
+
+#### DataSetMeta Example
+
+```json
+{
+  "Namespaces": [
+    "http://opcfoundation.org/UA/",
+    "urn:DEMO-5:UA Sample Server",
+    "http://opcfoundation.org/UA/DI/",
+    "http://opcfoundation.org/UA/Machinery/",
+    "http://opcfoundation.org/UA/IA/",
+    "http://opcfoundation.org/UA/MachineTool/",
+    "urn:Demo:MachineTool:myMachine/"
+  ],
+  "StructureDataTypes": "...",
+  "Name": "5:Production.5:ActiveProgram.5:State",
+  "Type": "5:ProductionProgramStateMachineType",
+  "TypeNodeID": "nsu=http://opcfoundation.org/UA/Machinery/;i=58997",
+  "AdditionalReference": [
+    {
+      "GeneratesEvents": "nsu=http://opcfoundation.org/UA/Machinery/;i=3444"
+    }
+  ],
+  "Fields": [
+    {
+      "Name": "http://opcfoundation.org/UA/Machinery/#name",
+      "Description": "as in Part 14",
+      "FieldFlags": "as in Part 14",
+      "BuiltInType": "12",
+      "DataType": {"id": 12},
+      "ValueRank": -1,
+      "ArrayDimensions": "as in Part 14",
+      "MaxStringLength": "as in Part 14",
+      "DataSetFieldId": "as in Part 14",
+      "Properties": "not used"
+    },
+    {
+      "Name": "http://opcfoundation.org/UA/Machinery/#NumberInList",
+      "Description": "as in Part 14",
+      "FieldFlags": "as in Part 14",
+      "BuiltInType": "5",
+      "DataType": {"id": 5},
+      "ValueRank": -1,
+      "ArrayDimensions": "as in Part 14",
+      "MaxStringLength": "as in Part 14",
+      "DataSetFieldId": "as in Part 14",
+      "Properties": "not used"
+    }
+  ]
+}
+```
+
+#### DateSet
+
+The DataSet follows the MetaData and other definitions of the specification. A DataSet for the umati Dashboard needs to contain at least the Payload as RowData and a DataSet message header with the following fields:
+
+- Timestamp
+- Status
+- Name
+
+#### DateSet Example
+
+```json
+{
+  "Timestamp": "2021-09-27T18:45:19.555Z",
+  "Status": 1073741824,
+  "Name": "5:Production.5:ActiveProgram.5:State",
+  "Payload": {
+    "Name": "Basic Program",
+    "NumberInList": 0
+  }
+}
+```
