@@ -1,13 +1,13 @@
 # OPC UA PubSub Interface Description for umati
 
 This document defines the Interface of the umati Dashboard based on OPC UA PubSub.
-It describes how a OPC UA server address space must be mapped to OPC UA PubSub, so that the information can map to the umati Dashboard templates and displayed.
+It describes how a OPC UA server _AddressSpace_ must be mapped to OPC UA PubSub, so that the information can map to the umati Dashboard templates and displayed.
 
-## Requirements for the Mapping of the address space to PubSub
+## Requirements for the Mapping of the _AddressSpace_ to PubSub
 
 (Reference: [umati/UA-CloudPublisher#5](https://github.com/umati/UA-CloudPublisher/issues/5))
 
-- Ability to react to dynamic changes in the address space (nodes added/deleted)
+- Ability to react to dynamic changes in the _AddressSpace_ (nodes added/deleted)
   - Changes should be detected by monitoring NodeManagement events.
 - Resolve references to nodes (NodeId as values)
 - Hierarchy references must be mapped
@@ -22,14 +22,17 @@ It describes how a OPC UA server address space must be mapped to OPC UA PubSub, 
 - Encoding should be UA JSON
 - Dimensioning for approximately 350 subscribers (machines + dashboard users)
 - Custom DataTypes must be included
-- The address space includes at least OPC UA Machinery and possibly other Companion Specifications based on it.
+- The _AddressSpace_ includes at least OPC UA Machinery and possibly other Companion Specifications based on it.
 - The entry point of the mapping is the machine object in the Machines folder of Machinery.
 
 ## Status of the Publisher
 
-As definied in OPC UA Part 14 the status should be sended at the following topic:
-`opcua/json/status/<PublisherId>` with  `<PublisherId>` is the name of the Client
-The value of the Field "IsCyclic" should be `true` and the Status should be published at least every 90 Sec a higher frequency is possible.
+As defined in OPC UA Part 14 the status should be send to the following topic:
+
+`opcua/json/status/<PublisherId>` with  `<PublisherId>` as the name of the Client
+
+- The value of the Field _`IsCyclic`_ should be `true` and
+- the Status should be published at __least every 90 sec__ a higher frequency is possible.
 
 ## Application Description
 
@@ -37,8 +40,10 @@ The Application can be send optional.
 
 ## Connection
 
-As definied in OPC UA Part 14 the connection should be sended at the following topic:
-`opcua/json/connection/<PublisherId>` with  `<PublisherId>` is the name of the Client.
+As defined in OPC UA Part 14 the connection should be send to the following topic:
+
+`opcua/json/connection/<PublisherId>` with  `<PublisherId>` as the name of the Client.
+
 The following parameter must be set:
 
 - `WriterGroups.DataSetWriters.QueueName`
@@ -46,26 +51,26 @@ The following parameter must be set:
 
 ## Mapping
 
-### Gerneral
+### General
 
-- For identification of nodes, the name of the DataSet with expanded NodeId must be used.
+- For identification of nodes, the name of the _DataSet_ with _ExpandedNodeId_ shall be used.
 
 ### Mapping of Objects and Variables
 
-- An object is mapped to a DataSet.
-- A variable is mapped as a field to the DataSet. If the variable contains children (other variables), a DataSet with the children is created.
+- An _Object_ is mapped to a _DataSet_.
+- A _Variable_ is mapped as a field to the _DataSet_. If the _Variable_ contains children (other variables), a _DataSet_ with the children is created.
 
 #### Example
 
-![image](https://github.com/umati/UA-CloudPublisher/assets/12342602/91eae1d7-9d6f-4246-abb2-0ec5ea9b59bc)
+![image](../screenshots/mapping.png)
 
-The image shows a part of an address space. Each object is mapped to a DataSet:
+The image shows a part of an _AddressSpace_. Each _Object_ is mapped to a _DataSet_:
 
 - Production
 - ActiveProgram
 - State
 
-The properties Name, NumberInList, Id, and Number are fields of the DataSets. The value of CurrentState is mapped as a field of State and has a DataSet with its properties:
+The properties _Name_, _NumberInList_, _Id_, and _Number_ are fields of the _DataSet_. The value of _CurrentState_ is mapped as a field of _State_ and has a _DataSet_ with its properties:
 
 - Production
 - ActiveProgram
@@ -79,13 +84,13 @@ The properties Name, NumberInList, Id, and Number are fields of the DataSets. Th
 
 ### Explanation
 
-A field can also contain properties but no other variables, even though the address space can contain more hierarchies. Properties of objects also cannot be mapped to the properties of a field. Therefore, a uniform mapping is used for objects and variables so that access is always consistent.
+A field can also contain properties but no other variables, even though the _AddressSpace_ can contain more hierarchies. Properties of objects also cannot be mapped to the properties of a field. Therefore, a uniform mapping is used for objects and variables so that access is always consistent.
 
 ## Mapping of Events
 
-Events are also mapped to a DataSet. Cause Event have no BrowsePath, the BrowsePath of the SourceName and the EventName is used. The mapping itself is analogous to the mapping of objects.
+_Events_ are also mapped to a _DataSet_. Because _Events_ have no _BrowsePath_, the _BrowsePath_ of the _SourceNam_ and the _EventName_ is used. The mapping itself is analogous to the mapping of objects.
 
-## Topic Structure of DataSet and MetaDataSet
+## Topic Structure of DataSet and DataSetMetaData
 
 The generic topic structure for OPC UA is:
 
@@ -101,17 +106,17 @@ The mapping is based on the structure but deviates from it if necessary. The con
 | `<PublisherId>`   | Name of the Client. Can be used for UNS Structure            |
 | `[<WriterGroup>[/<DataSetWriter>]]` | PathToTheNode                              |
 
-The PathToTheNode is the Path from the 0:Objects node to the Node that is connected to the DataSet.
+The PathToTheNode is the Path from the _0:Objects_ node to the _Node_ that is connected to the _DataSet_.
 Generally, only hierarchical references are used. If a node occurs in two places, the message should be sent to both topics.
-The use of Organizes references can lead to loops in the path. In this case, only the shortest path should be transmitted.
-Each Node is a topic. The Topic name is build from the `name` field of the BrowseName. All character except `[A-Za-z0-9]` need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
-If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
+The use of _Organizes_ references can lead to loops in the path. In this case, only the shortest path should be transmitted.
+Each _Node_ is a topic. The Topic name is build from the `name` field of the _BrowseName_. All character except `[A-Za-z0-9]` need to encode by [URL-Encoding](https://de.wikipedia.org/wiki/URL-Encoding) using an underscore instead of a '%'.
+If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
-For Events the SourceNode and the Name are used for the PathToTheNode
+For _Events_ the _SourceNode_ and the _Name_ are used for the PathToTheNode
 
 ### Examples
 
-DataSet Topic
+_DataSet_ Topic
 
 ```text
 umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Identification
@@ -119,13 +124,13 @@ umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/A
 umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State
 ```
 
-DataSet Event Topic
+_DataSet_ Event Topic
 
 ```text
 umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State/TransitionEventType
 ```
 
-MetaDataSet Topic
+_DataSetMetaData_ Topic
 
 ```text
 umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Identification
@@ -137,26 +142,26 @@ umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Producti
 
 Here we see three possible variants of how this semantic information can be transferred. A decision as to which of the variants should be implemented has not yet been made.
 
-### Variante A Encoding as Field
+### Variant A - Encoding as Field
 
-This variant defines new Fields in the DataSet for the meta data if he meta data that cannot be stored in an existing entry.
+This variant defines new _Fields_ in the _DataSet_ for the metadata if the metadata that cannot be stored in an existing entry.
 
-#### DataSetMeta
+#### DataSetMetaData
 
-The fields of DataSetMeta should be mapped as follows:
+The fields of _DataSetMetaData_ should be mapped as follows:
 
-- Namespaces = as defined in Part 14
-- StructureDataTypes = as defined in Part 14
-- Name = BrowsePath with NamespaceUri instead of namespace index
-- Description = as defined in Part 14
-- Fields = Contains the field description of the variables/properties
-  - Name = ExpandedBrowseName (NamespaceUri#Name)
+- _Namespaces_ = as defined in Part 14
+- _StructureDataTypes_ = as defined in Part 14
+- _Name_ = BrowsePath with NamespaceUri instead of namespace index
+- _Description_ = as defined in Part 14
+- _Fields_ = Contains the field description of the variables/properties
+  - _Name_ = ExpandedBrowseName (NamespaceUri#Name)
   - Properties = Not used
   - Other properties as defined in Part 14
-- DataSetClassId = as defined in Part 14
-- ConfigurationVersion = as defined in Part 14
+- _DataSetClassId_ = as defined in Part 14
+- _ConfigurationVersion = as defined in Part 14
 
-If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
+If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g., `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
 #### Fix Field in the DataSet
 
@@ -170,7 +175,7 @@ The description field needs to contain the following entries. The JSON object ca
 | umati_AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
 | umati_Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
 
-#### DataSetMeta Example
+#### A - DataSetMetaData Example
 
 ```json
 {
@@ -186,8 +191,9 @@ The description field needs to contain the following entries. The JSON object ca
   "StructureDataTypes": "...",
   "Name": "5:Production.5:ActiveProgram.5:State",
   "Description": "my Description",
-  "Fields": [{
-    "Name": "humati_TypeNodeID",
+  "Fields": [
+  {
+    "Name": "umati_TypeNodeID",
     "Description": "as in Part 14",
     "FieldFlags": "as in Part 14",
     "BuiltInType": "12",
@@ -210,7 +216,8 @@ The description field needs to contain the following entries. The JSON object ca
     "MaxStringLength": "as in Part 14",
     "DataSetFieldId": "as in Part 14",
     "Properties": "not used"
-  },{
+  },
+  {
     "Name": "http://opcfoundation.org/UA/Machinery/#NumberInList",
     "Description": "as in Part 14",
     "FieldFlags": "as in Part 14",
@@ -221,19 +228,20 @@ The description field needs to contain the following entries. The JSON object ca
     "MaxStringLength": "as in Part 14",
     "DataSetFieldId": "as in Part 14",
     "Properties": "not used"
-  }]
+  }
+  ]
 }
 ```
 
-#### DateSet
+#### A - DataSet
 
-The DataSet follows the MetaData and other definitions of the specification. A DataSet for the umati Dashboard needs to contain at least the Payload as RowData and a DataSet message header with the following fields:
+The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specification. A _DataSet_ for the umati Dashboard needs to contain at least the Payload as RowData and a _DataSet_ message header with the following fields:
 
 - Timestamp
 - Status
 - Name
 
-#### DateSet Example
+#### A- DataSet Example
 
 ```json
 {
@@ -241,10 +249,9 @@ The DataSet follows the MetaData and other definitions of the specification. A D
   "Status": 1073741824,
   "Name": "5:Production.5:ActiveProgram.5:State",
   "Payload": {
-	"umati_Types":["5:ProductionProgramStateMachineType","0:FinteStateMachineType",...,"0:BaseObjectType"]
-	"umati_TypeNodeID" : "nsu=http://opcfoundation.org/UA/Machinery/;i=58997",
-	"umati_AdditionalReference" : [
-      {"0:GeneratesEvents":"nsu=http://opcfoundation.org/UA/Machinery/;i=3444"}
+    "umati_Types":["5:ProductionProgramStateMachineType","0:FinteStateMachineType",...,"0:BaseObjectType"],"umati_TypeNodeID" : "nsu=http://opcfoundation.org/UA/Machinery/;i=58997",
+    "umati_AdditionalReference" : [
+    {"0:GeneratesEvents":"nsu=http://opcfoundation.org/UA/Machinery/;i=3444"}
     ]
     "Name": "Basic Program",
     "NumberInList": 0
@@ -252,27 +259,26 @@ The DataSet follows the MetaData and other definitions of the specification. A D
 }
 ```
 
+### Variant B - Encoding as JSON in the Description of the DataSetMetaData
 
-### Variante B Encoding as JSON in the Description of the DataSetMetaData
+This variant takes over the separation between _DataSet_ and _DataSetMetaData_ and maps the metadata in the _DataSetMetaData_. In order to remain standard-compliant, the metadata that cannot be stored in an existing entry is encoded in a JSON object in the description.
 
-This variant takes over the separation between DataSet and DataSetMeta and maps the meta data in the DataSetMeta. In order to remain standard-compliant, the meta data that cannot be stored in an existing entry is encoded in a JSON object in the description.
+#### B - DataSetMetaData
 
-#### DataSetMeta
+The fields of _DataSetMetaData_ should be mapped as follows:
 
-The fields of DataSetMeta should be mapped as follows:
-
-- Namespaces = as defined in Part 14
-- StructureDataTypes = as defined in Part 14
-- Name = BrowsePath with NamespaceUri instead of namespace index
-- Description = JSON object containing additional semantics (e.g., references)
-- Fields = Contains the field description of the variables/properties
+- _Namespaces_ = as defined in Part 14
+- _StructureDataTypes_ = as defined in Part 14
+- _Name_ = BrowsePath with NamespaceUri instead of namespace index
+- Description_ = JSON object containing additional semantics (e.g., references)
+- _Fields_ = Contains the field description of the variables/properties
   - Name = ExpandedBrowseName (NamespaceUri#Name)
   - Properties = Not used
   - Other properties as defined in Part 14
-- DataSetClassId = as defined in Part 14
-- ConfigurationVersion = as defined in Part 14
+- _DataSetClassId_ = as defined in Part 14
+- _ConfigurationVersion_ = as defined in Part 14
 
-If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
+If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
 #### Description JSON
 
@@ -286,7 +292,7 @@ The description field needs to contain the following entries. The JSON object ca
 | AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
 | Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
 
-#### DataSetMeta Example
+#### B - DataSetMetaData Example
 
 ```json
 {
@@ -301,14 +307,15 @@ The description field needs to contain the following entries. The JSON object ca
   ],
   "StructureDataTypes": "...",
   "Name": "5:Production.5:ActiveProgram.5:State",
-	"Description": "{\r\n
+  "Description": "{\r\n
     \"Type\": \"5:ProductionProgramStateMachineType\",\r\n
     \"TypeNodeID\": \"nsu=http:\/\/opcfoundation.org\/UA\/Machinery\/;i=58997\",\r\n
     \"AdditionalReference\": [\r\n
-	{\"GeneratesEvents\":\"nsu=http:\/\/opcfoundation.org\/UA\/Machinery\/;i=3444\"}\r\n
+  {\"GeneratesEvents\":\"nsu=http:\/\/opcfoundation.org\/UA\/Machinery\/;i=3444\"}\r\n
     ]\r\n
-	}"
-  "Fields": [{
+  }"
+  "Fields": [
+    {
     "Name": "http://opcfoundation.org/UA/Machinery/#name",
     "Description": "as in Part 14",
     "FieldFlags": "as in Part 14",
@@ -319,7 +326,8 @@ The description field needs to contain the following entries. The JSON object ca
     "MaxStringLength": "as in Part 14",
     "DataSetFieldId": "as in Part 14",
     "Properties": "not used"
-  },{
+    },
+    {
     "Name": "http://opcfoundation.org/UA/Machinery/#NumberInList",
     "Description": "as in Part 14",
     "FieldFlags": "as in Part 14",
@@ -330,19 +338,20 @@ The description field needs to contain the following entries. The JSON object ca
     "MaxStringLength": "as in Part 14",
     "DataSetFieldId": "as in Part 14",
     "Properties": "not used"
-  }]
+    }
+  ]
 }
 ```
 
-#### DateSet
+#### B - DataSet
 
-The DataSet follows the MetaData and other definitions of the specification. A DataSet for the umati Dashboard needs to contain at least the Payload as RowData and a DataSet message header with the following fields:
+The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specification. A _DataSet_ for the umati Dashboard needs to contain at least the Payload as RowData and a _DataSet_ message header with the following fields:
 
 - Timestamp
 - Status
 - Name
 
-#### DateSet Example
+#### B - DataSet Example
 
 ```json
 {
@@ -355,28 +364,29 @@ The DataSet follows the MetaData and other definitions of the specification. A D
   }
 }
 ```
-### Variante C Extend the DataSetMeta
 
-This variant extend the DataSetMeta with the needed fields. This variant may not compliance with OPC UA Part 14 but contains all needed informations and the seperation between DataSet and DataSetMeta is correct.
+### Variant C - Extend the DataSetMeta
 
-#### DataSetMeta
+This variant extend the _DataSetMetaData_ with the needed fields. This variant may not comply with OPC UA Part 14 but contains all needed information and the separation between _DataSet_ and _DataSetMetaData_ is correct.
 
-The fields of DataSetMeta should be mapped as follows:
+#### C - DataSetMetaData
 
-- Namespaces = as defined in Part 14
-- StructureDataTypes = as defined in Part 14
-- Name = BrowsePath with NamespaceUri instead of namespace index
-- Description = as defined in Part 14
-- Fields = Contains the field description of the variables/properties
+The fields of _DataSetMetaData_ should be mapped as follows:
+
+- _Namespaces_ = as defined in Part 14
+- _StructureDataTypes_ = as defined in Part 14
+- _Name_ = BrowsePath with NamespaceUri instead of namespace index
+- _Description_ = as defined in Part 14
+- _Fields_ = Contains the field description of the variables/properties
   - Name = ExpandedBrowseName (NamespaceUri#Name)
   - Properties = Not used
   - Other properties as defined in Part 14
-- DataSetClassId = as defined in Part 14
-- ConfigurationVersion = as defined in Part 14
+- _DataSetClassId_ = as defined in Part 14
+- _ConfigurationVersion_ = as defined in Part 14
 
-If two node has the same BrowsePath a iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
+If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
-Additional the following fiedls are defined:
+Additional the following fields are defined:
 
 | Name                 | DataType       | Dimension | ModellingRule | Description                                                     |
 |----------------------|----------------|-----------|---------------|-----------------------------------------------------------------|
@@ -386,7 +396,7 @@ Additional the following fiedls are defined:
 | AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
 | Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
 
-#### DataSetMeta Example
+#### C - DataSetMetaData Example
 
 ```json
 {
@@ -437,15 +447,15 @@ Additional the following fiedls are defined:
 }
 ```
 
-#### DateSet
+#### C - DataSet
 
-The DataSet follows the MetaData and other definitions of the specification. A DataSet for the umati Dashboard needs to contain at least the Payload as RowData and a DataSet message header with the following fields:
+The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specification. A _DataSet_ for the umati Dashboard needs to contain at least the Payload as RowData and a _DataSet_ message header with the following fields:
 
 - Timestamp
 - Status
 - Name
 
-#### DateSet Example
+#### C - DataSet Example
 
 ```json
 {
