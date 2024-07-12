@@ -39,7 +39,7 @@ namespace Opc.Ua.Cloud.Publisher.Configuration
                 int totalNodeCount = 0;
                 foreach (PublishNodesInterfaceModel configFileEntry in _configurationFileEntries)
                 {
-                    if (configFileEntry.OpcEvents != null) 
+                    if (configFileEntry.OpcEvents != null)
                     {
                         totalNodeCount += configFileEntry.OpcEvents.Count;
                     }

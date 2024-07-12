@@ -285,7 +285,8 @@ namespace Opc.Ua.Cloud.Publisher
 
         private Subscription CreateSubscription(Session session, ref int publishingInterval)
         {
-            Subscription subscription = new Subscription(session.DefaultSubscription) {
+            Subscription subscription = new Subscription(session.DefaultSubscription)
+            {
                 PublishingInterval = publishingInterval,
             };
 
@@ -527,7 +528,8 @@ namespace Opc.Ua.Cloud.Publisher
                 }
 
                 int opcSamplingIntervalForNode = (nodeToPublish.OpcSamplingInterval == 0) ? (int)Settings.Instance.DefaultOpcSamplingInterval : nodeToPublish.OpcSamplingInterval;
-                MonitoredItem newMonitoredItem = new MonitoredItem(opcSubscription.DefaultItem) {
+                MonitoredItem newMonitoredItem = new MonitoredItem(opcSubscription.DefaultItem)
+                {
                     StartNodeId = resolvedNodeId,
                     AttributeId = Attributes.Value,
                     SamplingInterval = opcSamplingIntervalForNode
