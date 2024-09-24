@@ -7,8 +7,8 @@ namespace Opc.Ua.Cloud.Publisher
     using Opc.Ua.Cloud.Publisher.Interfaces;
     using Opc.Ua.Configuration;
     using System;
-    using System.Globalization;
     using System.IO;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -16,6 +16,8 @@ namespace Opc.Ua.Cloud.Publisher
     {
         private readonly ILogger _logger;
         private readonly IFileStorage _storage;
+
+        public X509Certificate2 IssuerCert { get; set; }
 
         public ApplicationInstance UAApplicationInstance { get; set; }
 
@@ -135,22 +137,56 @@ namespace Opc.Ua.Cloud.Publisher
 
             _logger.LogInformation($"Application Certificate subject name is: {UAApplicationInstance.ApplicationConfiguration.SecurityConfiguration.ApplicationCertificate.SubjectName}");
 
+            await CreateIssuerCert().ConfigureAwait(false);
+
             _logger.LogInformation("Creating reverse connection endpoint on local port 50000.");
             ReverseConnectManager.AddEndpoint(new Uri("opc.tcp://localhost:50000"));
             ReverseConnectManager.StartService(UAApplicationInstance.ApplicationConfiguration);
+        }
+
+        private async Task CreateIssuerCert()
+        {
+            string certFilePath = await _storage.FindFileAsync(Path.Combine(Directory.GetCurrentDirectory(), "pki", "issuer", "private"), Settings.Instance.PublisherName).ConfigureAwait(false);
+            byte[] certFile = await _storage.LoadFileAsync(certFilePath).ConfigureAwait(false);
+            if (certFile == null)
+            {
+                _logger.LogError("Could not load issuer cert file, creating a new one. This means all conected OPC UA servers need to be issued a new cert!");
+
+                string subjectName = "CN=" + Settings.Instance.PublisherName + ", O=OPC Foundation";
+                IssuerCert = await CertificateFactory.CreateCertificate(subjectName)
+                  .SetNotBefore(DateTime.Today.AddDays(-1))
+                  .SetLifeTime(12)
+                  .SetHashAlgorithm(X509Utils.GetRSAHashAlgorithmName(2048))
+                  .SetCAConstraint()
+                  .SetRSAKeySize(2048)
+                  .CreateForRSA()
+                  .AddToStoreAsync(CertificateStoreType.Directory, Path.Combine(Directory.GetCurrentDirectory(), "pki", "issuer"))
+                  .ConfigureAwait(false);
+            }
+            else
+            {
+                IssuerCert = new X509Certificate2(certFile);
+            }
         }
 
         private void OpcStackLoggingHandler(object sender, TraceEventArgs e)
         {
             if ((e.TraceMask & Settings.Instance.UAStackTraceMask) != 0)
             {
-                if (e.Arguments != null)
+                if (e.Exception != null)
                 {
-                    _logger.LogInformation("OPC UA Stack: " + string.Format(CultureInfo.InvariantCulture, e.Format, e.Arguments).Trim());
+                    _logger.LogError(e.Exception, e.Format, e.Arguments);
+                    return;
                 }
-                else
+
+                switch (e.TraceMask)
                 {
-                    _logger.LogInformation("OPC UA Stack: " + e.Format.Trim());
+                    case Utils.TraceMasks.StartStop:
+                    case Utils.TraceMasks.Information: _logger.LogInformation(e.Format, e.Arguments); break;
+                    case Utils.TraceMasks.Error: _logger.LogError(e.Format, e.Arguments); break;
+                    case Utils.TraceMasks.StackTrace:
+                    case Utils.TraceMasks.Security: _logger.LogWarning(e.Format, e.Arguments); break;
+                    default: _logger.LogTrace(e.Format, e.Arguments); break;
                 }
             }
         }

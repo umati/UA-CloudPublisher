@@ -5,144 +5,105 @@ namespace Opc.Ua.Cloud.Publisher.Controllers
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
-    using Opc.Ua;
-    using Opc.Ua.Client;
-    using Opc.Ua.Cloud.Publisher;
     using Opc.Ua.Cloud.Publisher.Interfaces;
     using Opc.Ua.Cloud.Publisher.Models;
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading.Tasks;
 
     public class BrowserController : Controller
     {
-        private readonly OpcSessionHelper _helper;
+        private readonly IUAApplication _app;
+        private readonly IUAClient _client;
         private readonly ILogger _logger;
 
-        public BrowserController(OpcSessionHelper helper, IUAClient client, ILoggerFactory loggerFactory)
+        private SessionModel _session;
+
+        public BrowserController(IUAApplication app, IUAClient client, ILoggerFactory loggerFactory)
         {
-            _helper = helper;
+            _app = app;
+            _client = client;
             _logger = loggerFactory.CreateLogger("BrowserController");
+            _session = new();
         }
 
         [HttpPost]
         public IActionResult DownloadUACert()
         {
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
+
             try
             {
-                return File(_helper.GetCert().Export(X509ContentType.Cert), "APPLICATION/octet-stream", "cert.der");
+                return File(_app.UAApplicationInstance.ApplicationConfiguration.SecurityConfiguration.ApplicationCertificate.Certificate.Export(X509ContentType.Cert), "APPLICATION/octet-stream", "cert.der");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Could not download UA cert file");
-                return View("Index", new string[] { "Error:" + ex.Message });
+                _session.StatusMessage = ex.Message;
+                return View("Index", _session);
             }
         }
 
         [HttpGet]
         public ActionResult Index()
         {
-            SessionModel sessionModel = new SessionModel();
-            sessionModel.SessionId = HttpContext.Session.Id;
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
 
-            OpcSessionCacheData entry = null;
-            if (_helper.OpcSessionCache.TryGetValue(HttpContext.Session.Id, out entry))
+            if (!string.IsNullOrEmpty(_session.EndpointUrl))
             {
-                sessionModel.EndpointUrl = entry.EndpointURL;
-                HttpContext.Session.SetString("EndpointUrl", entry.EndpointURL);
-                return View("Browse", sessionModel);
+                return View("Browse", _session);
             }
 
-            return View("Index", sessionModel);
+            return View("Index", _session);
         }
 
         [HttpPost]
         public ActionResult UserPassword(string endpointUrl)
         {
-            return View("User", new SessionModel { EndpointUrl = endpointUrl });
+            if (string.IsNullOrEmpty(endpointUrl) || !endpointUrl.StartsWith("opc.tcp://"))
+            {
+                _session.StatusMessage = "Please provide a valid OPC UA endpoint URL in the format opc.tcp://ipaddress:port";
+                return View("Index", _session);
+            }
+
+            _session.EndpointUrl = endpointUrl;
+
+            HttpContext.Session.SetString("EndpointUrl", endpointUrl);
+
+            return View("User", _session);
         }
 
         [HttpPost]
-        public async Task<ActionResult> ConnectAsync(string username, string password, string endpointUrl)
+        public ActionResult ConnectAsync(string username, string password)
         {
-            SessionModel sessionModel = new SessionModel { UserName = username, Password = password, EndpointUrl = endpointUrl };
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
+            _session.UserName = username;
+            _session.Password = password;
 
-            Session session = null;
-
-            try
-            {
-                session = await _helper.GetSessionAsync(HttpContext.Session.Id, endpointUrl, username, password).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                sessionModel.StatusMessage = ex.Message;
-                return View("Index", sessionModel);
-            }
-
-            if (string.IsNullOrEmpty(endpointUrl))
-            {
-                sessionModel.StatusMessage = "The endpoint URL specified is invalid!";
-                return View("Index", sessionModel);
-            }
-            else
-            {
-                HttpContext.Session.SetString("EndpointUrl", endpointUrl);
-            }
-
-            if (!string.IsNullOrEmpty(username) && (password != null))
-            {
-                HttpContext.Session.SetString("UserName", username);
-                HttpContext.Session.SetString("Password", password);
-            }
-            else
-            {
-                HttpContext.Session.Remove("UserName");
-                HttpContext.Session.Remove("Password");
-            }
-
-            if (session == null)
-            {
-                sessionModel.StatusMessage = "Unable to create session!";
-                return View("Index", sessionModel);
-            }
-            else
-            {
-                sessionModel.StatusMessage = "Connected to: " + endpointUrl;
-                return View("Browse", sessionModel);
-            }
+            return View("Browse", _session);
         }
 
         [HttpPost]
         public ActionResult Disconnect()
         {
-            try
-            {
-                _helper.Disconnect(HttpContext.Session.Id);
-                HttpContext.Session.SetString("EndpointUrl", string.Empty);
-            }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
 
-            return View("Index", new SessionModel());
+            return View("Index", _session);
         }
 
         [HttpPost]
         public async Task<ActionResult> GeneratePN()
         {
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
+
             try
             {
-                List<UANodeInformation> results = await BrowseNodeResursiveAsync(null).ConfigureAwait(false);
-
-                Session session = await _helper.GetSessionAsync(HttpContext.Session.Id, HttpContext.Session.GetString("EndpointUrl")).ConfigureAwait(false);
+                List<UANodeInformation> results = await _client.BrowseVariableNodesResursivelyAsync(_session.EndpointUrl, _session.UserName, _session.Password, null).ConfigureAwait(false);
 
                 PublishNodesInterfaceModel model = new()
                 {
-                    EndpointUrl = session.Endpoint.EndpointUrl,
+                    EndpointUrl = _session.EndpointUrl,
                     OpcNodes = new List<VariableModel>()
                 };
 
@@ -169,23 +130,19 @@ namespace Opc.Ua.Cloud.Publisher.Controllers
             }
             catch (Exception ex)
             {
-                SessionModel sessionModel = new SessionModel
-                {
-                    StatusMessage = ex.Message,
-                    SessionId = HttpContext.Session.Id,
-                    EndpointUrl = HttpContext.Session.GetString("EndpointUrl")
-                };
-
-                return View("Browse", sessionModel);
+                _session.StatusMessage = ex.Message;
+                return View("Browse", _session);
             }
         }
 
         [HttpPost]
         public async Task<ActionResult> GenerateCSV()
         {
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
+
             try
             {
-                List<UANodeInformation> results = await BrowseNodeResursiveAsync(null).ConfigureAwait(false);
+                List<UANodeInformation> results = await _client.BrowseVariableNodesResursivelyAsync(_session.EndpointUrl, _session.UserName, _session.Password, null).ConfigureAwait(false);
 
                 string content = "Endpoint,ApplicationUri,ExpandedNodeId,DisplayName,Type,VariableCurrentValue,VariableType,Parent,References\r\n";
                 foreach (UANodeInformation nodeInfo in results)
@@ -216,209 +173,28 @@ namespace Opc.Ua.Cloud.Publisher.Controllers
             }
             catch (Exception ex)
             {
-                SessionModel sessionModel = new SessionModel
-                {
-                    StatusMessage = ex.Message,
-                    SessionId = HttpContext.Session.Id,
-                    EndpointUrl = HttpContext.Session.GetString("EndpointUrl")
-                };
-
-                return View("Browse", sessionModel);
+                _session.StatusMessage = ex.Message;
+                return View("Browse", _session);
             }
         }
 
-        private async Task<ReferenceDescriptionCollection> BrowseNodeAsync(NodeId nodeId)
+        [HttpPost]
+        public async Task<ActionResult> PushCert()
         {
-            ReferenceDescriptionCollection references = new();
-
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            BrowseDescription nodeToBrowse = new BrowseDescription
-            {
-                NodeId = nodeId,
-                BrowseDirection = BrowseDirection.Forward,
-                ReferenceTypeId = null,
-                IncludeSubtypes = true,
-                NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable),
-                ResultMask = (uint)BrowseResultMask.All
-            };
-
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection
-            {
-                nodeToBrowse
-            };
+            _session.EndpointUrl = HttpContext.Session.GetString("EndpointUrl");
 
             try
             {
-                Session session = await _helper.GetSessionAsync(HttpContext.Session.Id, HttpContext.Session.GetString("EndpointUrl")).ConfigureAwait(false);
+                 await _client.GDSServerPush(_session.EndpointUrl, _session.UserName, _session.Password).ConfigureAwait(false);
 
-                session.Browse(
-                    null,
-                    null,
-                    0,
-                    nodesToBrowse,
-                    out BrowseResultCollection results,
-                    out DiagnosticInfoCollection diagnosticInfos);
-
-                ClientBase.ValidateResponse(results, nodesToBrowse);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
-
-                do
-                {
-                    // check for error.
-                    if (Ua.StatusCode.IsBad(results[0].StatusCode))
-                    {
-                        break;
-                    }
-
-                    // process results.
-                    for (int i = 0; i < results[0].References.Count; i++)
-                    {
-                        references.Add(results[0].References[i]);
-                    }
-
-                    // check if all references have been fetched.
-                    if (results[0].References.Count == 0 || results[0].ContinuationPoint == null)
-                    {
-                        break;
-                    }
-
-                    // continue browse operation.
-                    ByteStringCollection continuationPoints = new ByteStringCollection
-                    {
-                        results[0].ContinuationPoint
-                    };
-
-                    session.BrowseNext(
-                        null,
-                        false,
-                        continuationPoints,
-                        out results,
-                        out diagnosticInfos);
-
-                    ClientBase.ValidateResponse(results, continuationPoints);
-                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
-                }
-                while (true);
+                _session.StatusMessage = "New certificate and trust list pushed successfully to server!";
             }
             catch (Exception ex)
             {
-                _logger.LogError("Cannot browse node {0}: {1}", nodeId, ex.Message);
-
-                throw;
-            }
-            finally
-            {
-                stopwatch.Stop();
+                _session.StatusMessage = ex.Message;
             }
 
-            _logger.LogInformation("Browing all childeren info of node '{0}' took {0} ms", nodeId, stopwatch.ElapsedMilliseconds);
-
-            return references;
-        }
-
-        private async Task<List<UANodeInformation>> BrowseNodeResursiveAsync(NodeId nodeId)
-        {
-            List<UANodeInformation> results = new();
-
-            try
-            {
-                if (nodeId == null)
-                {
-                    nodeId = ObjectIds.ObjectsFolder;
-                }
-
-                ReferenceDescriptionCollection references = await BrowseNodeAsync(nodeId).ConfigureAwait(false);
-                if (references != null)
-                {
-                    List<string> processedReferences = new();
-                    foreach (ReferenceDescription nodeReference in references)
-                    {
-                        // filter out duplicates
-                        if (processedReferences.Contains(nodeReference.NodeId.ToString()))
-                        {
-                            continue;
-                        }
-
-                        UANodeInformation nodeInfo = new()
-                        {
-                            DisplayName = nodeReference.DisplayName.Text,
-                            Type = nodeReference.NodeClass.ToString()
-                        };
-
-                        try
-                        {
-                            Session session = await _helper.GetSessionAsync(HttpContext.Session.Id, HttpContext.Session.GetString("EndpointUrl")).ConfigureAwait(false);
-
-                            nodeInfo.ApplicationUri = session.ServerUris.ToArray()[0];
-
-                            nodeInfo.Endpoint = session.Endpoint.EndpointUrl;
-
-                            if (nodeId.NamespaceIndex == 0)
-                            {
-                                nodeInfo.Parent = "nsu=http://opcfoundation.org/UA;" + nodeId.ToString();
-                            }
-                            else
-                            {
-                                nodeInfo.Parent = NodeId.ToExpandedNodeId(ExpandedNodeId.ToNodeId(nodeId, session.NamespaceUris), session.NamespaceUris).ToString();
-                            }
-
-                            if (nodeReference.NodeId.NamespaceIndex == 0)
-                            {
-                                nodeInfo.ExpandedNodeId = "nsu=http://opcfoundation.org/UA;" + nodeReference.NodeId.ToString();
-                            }
-                            else
-                            {
-                                nodeInfo.ExpandedNodeId = NodeId.ToExpandedNodeId(ExpandedNodeId.ToNodeId(nodeReference.NodeId, session.NamespaceUris), session.NamespaceUris).ToString();
-                            }
-
-                            if (nodeReference.NodeClass == NodeClass.Variable)
-                            {
-                                try
-                                {
-                                    DataValue value = session.ReadValue(ExpandedNodeId.ToNodeId(nodeReference.NodeId, session.NamespaceUris));
-                                    if ((value != null) && (value.WrappedValue != Variant.Null))
-                                    {
-                                        nodeInfo.VariableCurrentValue = value.ToString();
-                                        nodeInfo.VariableType = value.WrappedValue.TypeInfo.ToString();
-                                    }
-                                }
-                                catch (Exception)
-                                {
-                                    // do nothing
-                                }
-                            }
-
-                            List<UANodeInformation> childReferences = await BrowseNodeResursiveAsync(ExpandedNodeId.ToNodeId(nodeReference.NodeId, session.NamespaceUris)).ConfigureAwait(false);
-
-                            nodeInfo.References = new string[childReferences.Count];
-                            for (int i = 0; i < childReferences.Count; i++)
-                            {
-                                nodeInfo.References[i] = childReferences[i].ExpandedNodeId.ToString();
-                            }
-
-                            results.AddRange(childReferences);
-                        }
-                        catch (Exception)
-                        {
-                            // skip this node
-                            continue;
-                        }
-
-                        processedReferences.Add(nodeReference.NodeId.ToString());
-                        results.Add(nodeInfo);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Cannot browse node {0}: {1}", nodeId, ex.Message);
-
-                throw;
-            }
-
-            return results;
+            return View("Browse", _session);
         }
     }
 }

@@ -8,11 +8,16 @@
 }
 
 <h1>@ViewData["Title"]</h1>
-<br />
-<br />
 
 <p>
-    <component>@(await Html.RenderComponentAsync<UABrowser>(RenderMode.Server, new { EndpointUrl = Model.EndpointUrl, Username = Model.UserName, Password = Model.Password }).ConfigureAwait(false))</component>
+    <component>@(await Html.RenderComponentAsync<UABrowser>(
+        RenderMode.Server,
+        new {
+            EndpointUrl = Model.EndpointUrl,
+            Username = Model.UserName,
+            Password = Model.Password,
+            StatusMessage = Model.StatusMessage
+        }).ConfigureAwait(false))</component>
 </p>
 
 <p>
@@ -28,6 +33,14 @@
         @using (Html.BeginForm("GenerateCSV", "Browser"))
         {
             <input id="disconnectButton" class="btn btn-primary btn_browser" type="submit" value="Generate CSV file from all OPC UA variables in the server" />
+        }
+    </div>
+</p>
+<p>
+    <div class="row browser_browse_gds_push_button">
+        @using (Html.BeginForm("PushCert", "Browser"))
+        {
+            <input id="disconnectButton" class="btn btn-primary btn_browser" type="submit" value="Send new certificate and trust list to the server (GDS Server Push)" />
         }
     </div>
 </p>

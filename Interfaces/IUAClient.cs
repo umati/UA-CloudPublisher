@@ -9,6 +9,12 @@ namespace Opc.Ua.Cloud.Publisher.Interfaces
 
     public interface IUAClient : IDisposable
     {
+        Task<ReferenceDescriptionCollection> Browse(string endpointUrl, string username, string password, BrowseDescription nodeToBrowse, bool throwOnError);
+
+        Task<List<UANodeInformation>> BrowseVariableNodesResursivelyAsync(string endpointUrl, string username, string password, NodeId nodeId);
+
+        string ReadNode(string endpointUrl, string username, string password, ref string nodeId); 
+
         Task<string> PublishNodeAsync(NodePublishingModel nodeToPublish, CancellationToken cancellationToken = default);
 
         void UnpublishNode(NodePublishingModel nodeToUnpublish);
@@ -17,6 +23,8 @@ namespace Opc.Ua.Cloud.Publisher.Interfaces
 
         IEnumerable<PublishNodesInterfaceModel> GetPublishedNodes();
 
-        void WoTConUpload(string endpoint, byte[] bytes, string assetName);
+        Task GDSServerPush(string endpointURL, string adminUsername, string adminPassword);
+ 
+        Task WoTConUpload(string endpoint, string username, string password, byte[] bytes, string assetName);
     }
 }

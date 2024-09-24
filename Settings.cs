@@ -91,6 +91,8 @@ namespace Opc.Ua.Cloud.Publisher
             }
         }
 
+        public string AuthenticationCode { get; set; } = "Not applicable";
+
         public string UACertThumbprint { get; set; } = string.Empty;
 
         public DateTime UACertExpiry { get; set; } = DateTime.MinValue;
@@ -146,6 +148,8 @@ namespace Opc.Ua.Cloud.Publisher
         public bool UseCustomCertAuth { get; set; } = false;
 
         public bool UseReverseConnect { get; set; } = false;
+
+        public bool PushCertsBeforePublishing { get; set; } = false;
 
         public uint InternalQueueCapacity { get; set; } = 1000; // records
 

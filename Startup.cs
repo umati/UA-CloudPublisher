@@ -68,7 +68,6 @@ namespace Opc.Ua.Cloud.Publisher
 
             services.AddSingleton<IPublishedNodesFileHandler, PublishedNodesFileHandler>();
             services.AddSingleton<ICommandProcessor, CommandProcessor>();
-            services.AddSingleton<OpcSessionHelper>();
 
             // add our message processing engine
             services.AddSingleton<IMessageProcessor, MessageProcessor>();
@@ -121,7 +120,7 @@ namespace Opc.Ua.Cloud.Publisher
             {
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                    pattern: "{controller=Diag}/{action=Index}/{id?}");
                 endpoints.MapHub<StatusHub>("/statushub");
                 endpoints.MapBlazorHub();
             });

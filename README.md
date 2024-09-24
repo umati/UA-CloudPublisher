@@ -42,16 +42,13 @@ A cross-platform OPC UA cloud publisher reference implementation leveraging OPC 
 * Support for Intel/AMD `x64` and `arm64` architectures (Raspberry Pi4, etc.) with pre-built container images ready for use
 * Integration with [UA Edge Translator](https://github.com/barnstee/UA-EdgeTranslator)
 * Support for generating the Web of Things Thing Descriptions for UA Edge Translator automatically using ChatGPT
+* Support for issuing a new X509 certificate and trust list to connected OPC UA servers (GDS Server Push functionality)
 
 ## Build Status
 
 [![Docker](https://github.com/barnstee/UA-CloudPublisher/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/barnstee/UA-CloudPublisher/actions/workflows/docker-publish.yml)
 
 ## Screenshots
-
-### Main Page
-
-![Main Page](screenshots/mainpage.png)
 
 ### Browser
 
