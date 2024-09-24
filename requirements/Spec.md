@@ -76,7 +76,8 @@ The properties _Name_, _NumberInList_, _Id_, and _Number_ are fields of the _Dat
 - ActiveProgram
   - Name
   - NumberInList
-  - CurrentState
+  - State
+    - CurrentState
 - State
 - CurrentState
   - Id
@@ -88,7 +89,7 @@ A field can also contain properties but no other variables, even though the _Add
 
 ## Mapping of Events
 
-_Events_ are also mapped to a _DataSet_. Because _Events_ have no _BrowsePath_, the _BrowsePath_ of the _SourceNam_ and the _EventName_ is used. The mapping itself is analogous to the mapping of objects.
+_Events_ are also mapped to a _DataSet_. Because _Events_ may have no _BrowsePath_, the _BrowsePath_ of the _SourceNam_ and the _EventName_ is used. The mapping itself is analogous to the mapping of objects.
 
 ## Topic Structure of DataSet and DataSetMetaData
 
