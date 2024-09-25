@@ -6,7 +6,8 @@ tasks:
     init: |
       dotnet restore "./UA-CloudPublisher.csproj"
     command: |
-      # Installs renovate to validate renovate.json by running `renovate-config-validator`
+      # Installs renovate to validate renovate.json by
+      # running `renovate-config-validator`
       npm install --location=global renovate && pip install --user yamllint
       dotnet build "./UA-CloudPublisher.csproj"
 
