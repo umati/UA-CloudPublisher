@@ -141,42 +141,46 @@ umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Producti
 
 ## How to annotate the DataSet with semantics (e.g. TypeDefinition, References)
 
-Here we see three possible variants of how this semantic information can be transferred. A decision as to which of the variants should be implemented has not yet been made.
+The principle of the semantic mapping is done with an additional (virtual) field that contains the ID of the object. The metadata (particularly the references) for the object will be set as properties on this field.
 
-### Variant A - Encoding as Field
-
-This variant defines new _Fields_ in the _DataSet_ for the metadata if the metadata that cannot be stored in an existing entry.
-
-#### DataSetMetaData
+### DataSetMetaData
 
 The fields of _DataSetMetaData_ should be mapped as follows:
 
 - _Namespaces_ = as defined in Part 14
 - _StructureDataTypes_ = as defined in Part 14
-- _Name_ = BrowsePath with NamespaceUri instead of namespace index
+- _Name_ = ExtendedNodeID
 - _Description_ = as defined in Part 14
 - _Fields_ = Contains the field description of the variables/properties
   - _Name_ = ExpandedBrowseName (NamespaceUri#Name)
-  - Properties = Not used
+  - Properties = only used for "virutal_id"
   - Other properties as defined in Part 14
 - _DataSetClassId_ = as defined in Part 14
 - _ConfigurationVersion = as defined in Part 14
 
+### Additional Fields
+
+Each DataSet need an Field called "virual_id" which contains the BrowsePath.
+(e.g.; `5:Production.5:ActiveProgram.5:State`)
+
 If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g., `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
 
-#### Fix Field in the DataSet
+The metadata of the object is write to the Properties.
 
-The description field needs to contain the following entries. The JSON object can be extended vendor-specifically if necessary.
+| Key               | DataType              | ModellingRule | Description                  |
+|-------------------|-----------------------|---------------|------------------------------|
+| Reference_No    | ReferenceDescription  | Optional      | References from the object   |
 
-| Name                 | DataType       | Dimension | ModellingRule | Description                                                     |
-|----------------------|----------------|-----------|---------------|-----------------------------------------------------------------|
-| umati_Types                | QualifiedName     | Array    | optional      | Name of the type of the ObjectType or VariableType. Each empty in the array represents a supertype of the node. The first entry is the type itself.              |
-| umati_TypeNodeID           | ExtendedNodeId | Scalar    |               | NodeId of the type of the ObjectType or VariableType            |
-| umati_AdditionalBrowsePath | String         | Scalar    | optional      | If additional BrowsePaths exist, they can be included here      |
-| umati_AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
-| umati_Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
 
-#### A - DataSetMetaData Example
+Reference_No (e.g., Reference_1, Reference_23) should be counted to that each reference has a different key.
+The following Reference must be set, other Reference can be send:
+
+- HasSubtype
+- GenerateEvent
+
+HasComponent Refernce must not be send because this is mapped via the topic structure.
+
+### DataSetMetaData Example
 
 ```json
 {
@@ -190,11 +194,11 @@ The description field needs to contain the following entries. The JSON object ca
     "urn:Demo:MachineTool:myMachine/"
   ],
   "StructureDataTypes": "...",
-  "Name": "5:Production.5:ActiveProgram.5:State",
   "Description": "my Description",
+  "Name": "nsu=urn:Demo:MachineTool:myMachine/;i=1001",
   "Fields": [
   {
-    "Name": "umati_TypeNodeID",
+    "Name": "virual_id",
     "Description": "as in Part 14",
     "FieldFlags": "as in Part 14",
     "BuiltInType": "12",
@@ -203,38 +207,43 @@ The description field needs to contain the following entries. The JSON object ca
     "ArrayDimensions": "as in Part 14",
     "MaxStringLength": "as in Part 14",
     "DataSetFieldId": "as in Part 14",
-    "Properties": "not used"
+    "Properties":[
+      {
+        "key" : "Reference_1",
+        "value": {
+        "referenceTypeId":"nsu=http://opcfoundation.org/UA/;i=45",
+        "isForward":"False",
+        "nodeId":"http://opcfoundation.org/UA/MachineTool/;i=1001",
+        "browseName1":"5:ProductionProgramStateMachineType",
+        "displayName":{
+          "locale" : "en",
+          "text":"ProductionProgramStateMachineType"
+        },
+        "nodeClass1":"ObjectType",
+        "typeDefinition1":"",
+        }
+      },
+      {
+        "key" : "Reference_2",
+        "value": {
+        "referenceTypeId":"nsu=http://opcfoundation.org/UA/;i=2311",
+        "isForward":"False",
+        "nodeId":"nsu=http://opcfoundation.org/UA/Machinery/;i=3444",
+        "browseName1":"0:TransitionEventType",
+        "displayName":"TransitionEventType",
+        "nodeClass1":"ObjectType",
+        "typeDefinition1":"",
+        }
+      }
+    ]
+
   },
   ...
-  {
-    "Name": "http://opcfoundation.org/UA/Machinery/#name",
-    "Description": "as in Part 14",
-    "FieldFlags": "as in Part 14",
-    "BuiltInType": "12",
-    "DataType": {"id": 12},
-    "ValueRank": -1,
-    "ArrayDimensions": "as in Part 14",
-    "MaxStringLength": "as in Part 14",
-    "DataSetFieldId": "as in Part 14",
-    "Properties": "not used"
-  },
-  {
-    "Name": "http://opcfoundation.org/UA/Machinery/#NumberInList",
-    "Description": "as in Part 14",
-    "FieldFlags": "as in Part 14",
-    "BuiltInType": "5",
-    "DataType": {"id": 5},
-    "ValueRank": -1,
-    "ArrayDimensions": "as in Part 14",
-    "MaxStringLength": "as in Part 14",
-    "DataSetFieldId": "as in Part 14",
-    "Properties": "not used"
-  }
   ]
 }
 ```
 
-#### A - DataSet
+#### DataSet Example
 
 The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specification. A _DataSet_ for the umati Dashboard needs to contain at least the Payload as RowData and a _DataSet_ message header with the following fields:
 
@@ -242,228 +251,13 @@ The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specifi
 - Status
 - Name
 
-#### A- DataSet Example
-
 ```json
 {
   "Timestamp": "2021-09-27T18:45:19.555Z",
   "Status": 1073741824,
-  "Name": "5:Production.5:ActiveProgram.5:State",
+  "Name": "nsu=urn:Demo:MachineTool:myMachine/;i=1001",
   "Payload": {
-    "umati_Types":["5:ProductionProgramStateMachineType","0:FinteStateMachineType",...,"0:BaseObjectType"],"umati_TypeNodeID" : "nsu=http://opcfoundation.org/UA/Machinery/;i=58997",
-    "umati_AdditionalReference" : [
-    {"0:GeneratesEvents":"nsu=http://opcfoundation.org/UA/Machinery/;i=3444"}
-    ]
-    "Name": "Basic Program",
-    "NumberInList": 0
-  }
-}
-```
-
-### Variant B - Encoding as JSON in the Description of the DataSetMetaData
-
-This variant takes over the separation between _DataSet_ and _DataSetMetaData_ and maps the metadata in the _DataSetMetaData_. In order to remain standard-compliant, the metadata that cannot be stored in an existing entry is encoded in a JSON object in the description.
-
-#### B - DataSetMetaData
-
-The fields of _DataSetMetaData_ should be mapped as follows:
-
-- _Namespaces_ = as defined in Part 14
-- _StructureDataTypes_ = as defined in Part 14
-- _Name_ = BrowsePath with NamespaceUri instead of namespace index
-- Description_ = JSON object containing additional semantics (e.g., references)
-- _Fields_ = Contains the field description of the variables/properties
-  - Name = ExpandedBrowseName (NamespaceUri#Name)
-  - Properties = Not used
-  - Other properties as defined in Part 14
-- _DataSetClassId_ = as defined in Part 14
-- _ConfigurationVersion_ = as defined in Part 14
-
-If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
-
-#### Description JSON
-
-The description field needs to contain the following entries. The JSON object can be extended vendor-specifically if necessary.
-
-| Name                 | DataType       | Dimension | ModellingRule | Description                                                     |
-|----------------------|----------------|-----------|---------------|-----------------------------------------------------------------|
-| Type                 | QualifiedName     | Array    | optional      | Name of the type of the ObjectType or VariableType. Each empty in the array represents a supertype of the node. The first entry is the type itself.              |
-| TypeNodeID           | ExtendedNodeId | Scalar    |               | NodeId of the type of the ObjectType or VariableType            |
-| AdditionalBrowsePath | String         | Scalar    | optional      | If additional BrowsePaths exist, they can be included here      |
-| AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
-| Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
-
-#### B - DataSetMetaData Example
-
-```json
-{
-  "Namespaces": [
-    "http://opcfoundation.org/UA/",
-    "urn:DEMO-5:UA Sample Server",
-    "http://opcfoundation.org/UA/DI/",
-    "http://opcfoundation.org/UA/Machinery/",
-    "http://opcfoundation.org/UA/IA/",
-    "http://opcfoundation.org/UA/MachineTool/",
-    "urn:Demo:MachineTool:myMachine/"
-  ],
-  "StructureDataTypes": "...",
-  "Name": "5:Production.5:ActiveProgram.5:State",
-  "Description": "{\r\n
-    \"Type\": \"5:ProductionProgramStateMachineType\",\r\n
-    \"TypeNodeID\": \"nsu=http:\/\/opcfoundation.org\/UA\/Machinery\/;i=58997\",\r\n
-    \"AdditionalReference\": [\r\n
-  {\"GeneratesEvents\":\"nsu=http:\/\/opcfoundation.org\/UA\/Machinery\/;i=3444\"}\r\n
-    ]\r\n
-  }"
-  "Fields": [
-    {
-    "Name": "http://opcfoundation.org/UA/Machinery/#name",
-    "Description": "as in Part 14",
-    "FieldFlags": "as in Part 14",
-    "BuiltInType": "12",
-    "DataType": {"id": 12},
-    "ValueRank": -1,
-    "ArrayDimensions": "as in Part 14",
-    "MaxStringLength": "as in Part 14",
-    "DataSetFieldId": "as in Part 14",
-    "Properties": "not used"
-    },
-    {
-    "Name": "http://opcfoundation.org/UA/Machinery/#NumberInList",
-    "Description": "as in Part 14",
-    "FieldFlags": "as in Part 14",
-    "BuiltInType": "5",
-    "DataType": {"id": 5},
-    "ValueRank": -1,
-    "ArrayDimensions": "as in Part 14",
-    "MaxStringLength": "as in Part 14",
-    "DataSetFieldId": "as in Part 14",
-    "Properties": "not used"
-    }
-  ]
-}
-```
-
-#### B - DataSet
-
-The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specification. A _DataSet_ for the umati Dashboard needs to contain at least the Payload as RowData and a _DataSet_ message header with the following fields:
-
-- Timestamp
-- Status
-- Name
-
-#### B - DataSet Example
-
-```json
-{
-  "Timestamp": "2021-09-27T18:45:19.555Z",
-  "Status": 1073741824,
-  "Name": "5:Production.5:ActiveProgram.5:State",
-  "Payload": {
-    "Name": "Basic Program",
-    "NumberInList": 0
-  }
-}
-```
-
-### Variant C - Extend the DataSetMeta
-
-This variant extend the _DataSetMetaData_ with the needed fields. This variant may not comply with OPC UA Part 14 but contains all needed information and the separation between _DataSet_ and _DataSetMetaData_ is correct.
-
-#### C - DataSetMetaData
-
-The fields of _DataSetMetaData_ should be mapped as follows:
-
-- _Namespaces_ = as defined in Part 14
-- _StructureDataTypes_ = as defined in Part 14
-- _Name_ = BrowsePath with NamespaceUri instead of namespace index
-- _Description_ = as defined in Part 14
-- _Fields_ = Contains the field description of the variables/properties
-  - Name = ExpandedBrowseName (NamespaceUri#Name)
-  - Properties = Not used
-  - Other properties as defined in Part 14
-- _DataSetClassId_ = as defined in Part 14
-- _ConfigurationVersion_ = as defined in Part 14
-
-If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to avoid collisions (e.g, `Parent/Tool.1`, `Parent.3/Tool.2` `Parent3/Tool.3` )
-
-Additional the following fields are defined:
-
-| Name                 | DataType       | Dimension | ModellingRule | Description                                                     |
-|----------------------|----------------|-----------|---------------|-----------------------------------------------------------------|
-| Type                 | QualifiedName     | Array    | optional      | Name of the type of the ObjectType or VariableType. Each empty in the array represents a supertype of the node. The first entry is the type itself.              |
-| TypeNodeID           | ExtendedNodeId | Scalar    |               | NodeId of the type of the ObjectType or VariableType            |
-| AdditionalBrowsePath | String         | Scalar    | optional      | If additional BrowsePaths exist, they can be included here      |
-| AdditionalReference  | KeyValuePair   | Array     | optional      | Additional references from the object, e.g., GenerateEvent      |
-| Description          | String         | Scalar    | optional      | Description as defined for the description field in Part 14     |
-
-#### C - DataSetMetaData Example
-
-```json
-{
-  "Namespaces": [
-    "http://opcfoundation.org/UA/",
-    "urn:DEMO-5:UA Sample Server",
-    "http://opcfoundation.org/UA/DI/",
-    "http://opcfoundation.org/UA/Machinery/",
-    "http://opcfoundation.org/UA/IA/",
-    "http://opcfoundation.org/UA/MachineTool/",
-    "urn:Demo:MachineTool:myMachine/"
-  ],
-  "StructureDataTypes": "...",
-  "Name": "5:Production.5:ActiveProgram.5:State",
-  "Type": "5:ProductionProgramStateMachineType",
-  "TypeNodeID": "nsu=http://opcfoundation.org/UA/Machinery/;i=58997",
-  "AdditionalReference": [
-    {
-      "GeneratesEvents": "nsu=http://opcfoundation.org/UA/Machinery/;i=3444"
-    }
-  ],
-  "Fields": [
-    {
-      "Name": "http://opcfoundation.org/UA/Machinery/#name",
-      "Description": "as in Part 14",
-      "FieldFlags": "as in Part 14",
-      "BuiltInType": "12",
-      "DataType": {"id": 12},
-      "ValueRank": -1,
-      "ArrayDimensions": "as in Part 14",
-      "MaxStringLength": "as in Part 14",
-      "DataSetFieldId": "as in Part 14",
-      "Properties": "not used"
-    },
-    {
-      "Name": "http://opcfoundation.org/UA/Machinery/#NumberInList",
-      "Description": "as in Part 14",
-      "FieldFlags": "as in Part 14",
-      "BuiltInType": "5",
-      "DataType": {"id": 5},
-      "ValueRank": -1,
-      "ArrayDimensions": "as in Part 14",
-      "MaxStringLength": "as in Part 14",
-      "DataSetFieldId": "as in Part 14",
-      "Properties": "not used"
-    }
-  ]
-}
-```
-
-#### C - DataSet
-
-The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specification. A _DataSet_ for the umati Dashboard needs to contain at least the Payload as RowData and a _DataSet_ message header with the following fields:
-
-- Timestamp
-- Status
-- Name
-
-#### C - DataSet Example
-
-```json
-{
-  "Timestamp": "2021-09-27T18:45:19.555Z",
-  "Status": 1073741824,
-  "Name": "5:Production.5:ActiveProgram.5:State",
-  "Payload": {
+    "virutal_id" : "5:Production.5:ActiveProgram.5:State",
     "Name": "Basic Program",
     "NumberInList": 0
   }
