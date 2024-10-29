@@ -236,9 +236,19 @@ HasComponent Refernce must not be send because this is mapped via the topic stru
         }
       }
     ]
-
   },
-  ...
+  {
+    "Name": "CurrentState",
+    "Description": "as in Part 14",
+    "FieldFlags": "as in Part 14",
+    "BuiltInType": "21",
+    "DataType": {"id": 21},
+    "ValueRank": -1,
+    "ArrayDimensions": "as in Part 14",
+    "MaxStringLength": "as in Part 14",
+    "DataSetFieldId": "as in Part 14",
+    "Properties" :[]
+  }
   ]
 }
 ```
@@ -258,8 +268,10 @@ The _DataSet_ follows the _DataSetMetaData_ and other definitions of the specifi
   "Name": "nsu=urn:Demo:MachineTool:myMachine/;i=1001",
   "Payload": {
     "virutal_id" : "5:Production.5:ActiveProgram.5:State",
-    "Name": "Basic Program",
-    "NumberInList": 0
+    "CurrentState": {
+      "local":"en",
+      "text":"Basic Program"
+      },
   }
 }
 ```
