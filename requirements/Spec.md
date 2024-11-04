@@ -93,19 +93,30 @@ _Events_ are also mapped to a _DataSet_. Because _Events_ may have no _BrowsePat
 
 ## Topic Structure of DataSet and DataSetMetaData
 
+This mapping use the connection topic with the `WriterGroups.DataSetWriters.QueueName` need to define the topic trees for the DataSet and DataSetMetaData.
+That means a client need to check the connection before it can "connect" to a machine.
+
+In context of the umati Dashboard the following topic Strutuce must be used because of access restiction but because of the Connection Topic in other use cases (or on other brokers) other topic structure can be used.
+
 The generic topic structure for OPC UA is:
 
 `<Prefix>/<Encoding>/<MqttMessageType>/<PublisherId>/[<WriterGroup>[/<DataSetWriter>]]`
 
-The mapping is based on the structure but deviates from it if necessary. The connection topic (see above) can still be used to read out the exact topic.
+The mapping is based on the structure but deviates from it if necessary e.g., for the unified namespace. To the new topic structure for this mapping is the following:
+
+`<Prefix>/<Encoding>/<MqttMessageType>/<PublisherId>/[<UNS>]/[<WriterGroup>[/<DataSetWriter>]]`
+
 
 | Key               | Description                                                  |
 |-------------------|--------------------------------------------------------------|
 | `<Prefix>`        | umati/v3                                                     |
 | `<Encoding>`      | json                                                         |
 | `<MqttMessageType>` | as defined in OPC UA PubSub                                |
-| `<PublisherId>`   | Name of the Client. Can be used for UNS Structure            |
+| `<PublisherId>`   | Name of the Client.                                          |
+| `<UNS>`           | The location of the device in the ISA-95 common data model   |
 | `[<WriterGroup>[/<DataSetWriter>]]` | PathToTheNode                              |
+
+The `<UNS>` the be create as following sturucture `Enterprise:Site:Area:Line:Cell`. 
 
 The PathToTheNode is the Path from the _0:Objects_ node to the _Node_ that is connected to the _DataSet_.
 Generally, only hierarchical references are used. If a node occurs in two places, the message should be sent to both topics.
@@ -115,13 +126,14 @@ If two nodes have the same _BrowsePath_ an iterator (".Number") can be send to a
 
 For _Events_ the _SourceNode_ and the _Name_ are used for the PathToTheNode
 
+
 ### Examples
 
 _DataSet_ Topic
 
 ```text
-umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Identification
-umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram
+umati/v3/json/data/example_publisher_1/Enterprise1:Plant1:Area3:Line4:Cell2/machines/ShowcaseMachineTool/Identification
+umati/v3/json/data/example_publisher_1/Enterprise1:Plant1:Area3:Line4:Cell2/machines/ShowcaseMachineTool/Production/ActiveProgram
 umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State
 ```
 
@@ -129,12 +141,14 @@ _DataSet_ Event Topic
 
 ```text
 umati/v3/json/data/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State/TransitionEventType
+umati/v3/json/data/example_publisher_1/Enterprise1:Plant1:Area3:Line4:Cell2/machines/ShowcaseMachineTool/Production/ActiveProgram/State/TransitionEventType
+
 ```
 
 _DataSetMetaData_ Topic
 
 ```text
-umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Identification
+umati/v3/json/metadata/example_publisher_1/Enterprise1:Plant1:Area3:Line4:Cell2/machines/ShowcaseMachineTool/Identification
 umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram
 umati/v3/json/metadata/example_publisher_1/machines/ShowcaseMachineTool/Production/ActiveProgram/State
 ```
