@@ -10,9 +10,6 @@ on: # yamllint disable-line rule:truthy
   schedule:
     - cron: "23 9 * * *"
   push:
-    branches: [main, develop]
-    # Publish semver tags as releases.
-    tags: ["v*.*.*"]
   pull_request:
     branches: [main, develop, upstream]
   merge_group:
