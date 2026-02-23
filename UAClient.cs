@@ -1482,7 +1482,7 @@ namespace Opc.Ua.Cloud.Publisher
                 // save the last element.
                 for (int i = 0; i < eventTypes.Count; i++)
                 {
-                    // we uses the 'OfType' operator to limit events to thoses with specified event type.
+                    // we uses the 'OfType' operator to limit events to those with specified event type.
                     LiteralOperand operand1 = new LiteralOperand();
                     operand1.Value = new Variant(eventTypes[i]);
                     ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, operand1);
@@ -1582,7 +1582,7 @@ namespace Opc.Ua.Cloud.Publisher
                     eventFields.Add(field);
                 }
 
-                // recusively find all of the children.
+                // recursively find all of the children.
                 NodeId targetId = (NodeId)child.NodeId;
 
                 // need to guard against loops.
